@@ -98,13 +98,19 @@ class ScreenshotDetectionService : Service() {
                 if (cursor.moveToFirst()) {
                     val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID)
                     val dataColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA)
+                    val dateAddedColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATE_ADDED)
                     val id = cursor.getLong(idColumn)
                     val path = cursor.getString(dataColumn)
+                    val dateAdded = cursor.getLong(dateAddedColumn)
 
                     if (id != lastObservedId && path.contains("screenshot", ignoreCase = true)) {
                         lastObservedId = id
-                        Log.d("ScreenshotService", "New screenshot detected: $path")
-                        showOverlayPopup(path)
+                        // DATE_ADDED is in seconds. Only trigger if added within the last 15 seconds.
+                        val nowInSeconds = System.currentTimeMillis() / 1000
+                        if (nowInSeconds - dateAdded <= 15) {
+                            Log.d("ScreenshotService", "New screenshot detected: $path")
+                            showOverlayPopup(path)
+                        }
                     }
                 }
             }
