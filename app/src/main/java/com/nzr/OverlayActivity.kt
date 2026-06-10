@@ -50,12 +50,12 @@ class OverlayActivity : ComponentActivity() {
                 }
             )
         }
-    }
-    
-    // Disable back button just in case, but usually we want to allow cancel
-    override fun onBackPressed() {
-        super.onBackPressed()
-        finish()
+
+        onBackPressedDispatcher.addCallback(this, object : androidx.activity.OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                finish()
+            }
+        })
     }
 }
 

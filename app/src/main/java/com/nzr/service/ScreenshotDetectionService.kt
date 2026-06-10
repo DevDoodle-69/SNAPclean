@@ -7,6 +7,7 @@ import android.net.Uri
 import android.os.*
 import android.provider.MediaStore
 import android.util.Log
+import android.content.ContentUris
 import androidx.core.app.NotificationCompat
 import com.nzr.R
 import com.nzr.data.AppDatabase
@@ -147,32 +148,57 @@ class ScreenshotDetectionService : Service() {
             val file = File(path)
             var isDeleted = false
             try {
-                if (file.exists()) {
-                    isDeleted = file.delete()
-                }
+                // 1. Try to query the exact MediaStore URI to delete it properly
+                val uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+                val projection = arrayOf(MediaStore.Images.Media._ID)
+                val selection = "${MediaStore.Images.Media.DATA} = ?"
+                val selectionArgs = arrayOf(path)
                 
-                // If it fails to delete via File API or naturally, attempt MediaStore delete
-                if (!isDeleted || Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    try {
-                        val uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI
-                        val deletedCount = contentResolver.delete(uri, "${MediaStore.Images.Media.DATA}=?", arrayOf(path))
-                        if (deletedCount > 0) {
+                contentResolver.query(uri, projection, selection, selectionArgs, null)?.use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID)
+                        val id = cursor.getLong(idColumn)
+                        val itemUri = ContentUris.withAppendedId(uri, id)
+                        val deletedRows = contentResolver.delete(itemUri, null, null)
+                        if (deletedRows > 0) {
                             isDeleted = true
                         }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
+                    }
+                }
+
+                // 2. Fallback to ContentResolver delete by DATA path
+                if (!isDeleted) {
+                    val deletedCount = contentResolver.delete(uri, "${MediaStore.Images.Media.DATA}=?", arrayOf(path))
+                    if (deletedCount > 0) {
+                        isDeleted = true
+                    }
+                }
+                
+                // 3. Fallback to direct File delete
+                if (file.exists()) {
+                    if (file.delete()) {
+                        isDeleted = true
                     }
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
             }
                 
-            if (isDeleted) {
-                // Vibrate and Sound
+            if (isDeleted || !file.exists()) {
+                // Vibrate and Play woosh sound
+                try {
+                    val mediaPlayer = android.media.MediaPlayer.create(this@ScreenshotDetectionService, R.raw.woosh)
+                    mediaPlayer?.setOnCompletionListener { it.release() }
+                    mediaPlayer?.start()
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+                
                 val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     vibrator.vibrate(VibrationEffect.createOneShot(100, VibrationEffect.DEFAULT_AMPLITUDE))
                 } else {
+                    @Suppress("DEPRECATION")
                     vibrator.vibrate(100)
                 }
                 showToastNotification("Screenshot automatically deleted.")

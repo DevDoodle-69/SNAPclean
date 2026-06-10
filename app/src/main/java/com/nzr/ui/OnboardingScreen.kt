@@ -46,6 +46,9 @@ fun OnboardingScreen(onComplete: () -> Unit) {
         permissionsToRequest.add(Manifest.permission.READ_MEDIA_IMAGES)
     } else {
         permissionsToRequest.add(Manifest.permission.READ_EXTERNAL_STORAGE)
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+            permissionsToRequest.add(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+        }
     }
 
     val multiplePermissionsState = rememberMultiplePermissionsState(permissionsToRequest)

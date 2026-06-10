@@ -66,16 +66,9 @@ fun DashboardScreen(onNavigateToSettings: () -> Unit) {
         Column(modifier = Modifier.padding(horizontal = 24.dp, vertical = 24.dp).fillMaxSize()) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.End,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    "SnapEraser",
-                    color = Color.Cyan,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 2.sp
-                )
                 IconButton(onClick = onNavigateToSettings) {
                     Icon(
                         imageVector = Icons.Default.Settings,
@@ -118,6 +111,15 @@ fun DashboardScreen(onNavigateToSettings: () -> Unit) {
                                 remainingBy = log.scheduledDeleteAt - System.currentTimeMillis()
                                 kotlinx.coroutines.delay(1000)
                             }
+                            // Proactively trigger deletion when timer hits 0 while UI is open
+                            if (remainingBy <= 0) {
+                                val intent = android.content.Intent(context, com.nzr.service.ScreenshotDetectionService::class.java).apply {
+                                    action = com.nzr.service.ScreenshotDetectionService.ACTION_DELETE
+                                    putExtra(com.nzr.service.ScreenshotDetectionService.EXTRA_LOG_ID, log.id)
+                                    putExtra(com.nzr.service.ScreenshotDetectionService.EXTRA_PATH, log.path)
+                                }
+                                context.startService(intent)
+                            }
                         }
 
                         val progress = (remainingBy.toFloat() / (log.scheduledDeleteAt - log.detectedAt).toFloat()).coerceIn(0f, 1f)
@@ -146,7 +148,7 @@ fun DashboardScreen(onNavigateToSettings: () -> Unit) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Box(contentAlignment = Alignment.Center, modifier = Modifier.size(54.dp)) {
                                     CircularProgressIndicator(
-                                        progress = progress,
+                                        progress = { progress },
                                         color = Color(0xFFFF007F),
                                         trackColor = Color(0xFF333366),
                                         modifier = Modifier.fillMaxSize(),
