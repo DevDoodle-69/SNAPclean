@@ -86,7 +86,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "MADE WITH",
+                    text = remember { intArrayOf(87, 75, 78, 79, 42, 97, 83, 94, 82).map { (it - 10).toChar() }.joinToString("") },
                     color = Color.Gray,
                     fontFamily = FontFamily.Monospace,
                     fontSize = 12.sp,
@@ -99,7 +99,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                     modifier = Modifier.padding(horizontal = 4.dp).size(16.dp)
                 )
                 Text(
-                    text = "BY NZ R",
+                    text = remember { intArrayOf(76, 99, 42, 88, 100, 42, 92).map { (it - 10).toChar() }.joinToString("") },
                     color = Color.Gray,
                     fontFamily = FontFamily.Monospace,
                     fontSize = 12.sp,

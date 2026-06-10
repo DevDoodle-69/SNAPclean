@@ -27,6 +27,14 @@ import com.nzr.ui.theme.MyApplicationTheme
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // Anti-cloning / Anti-tampering check
+        val e = String(charArrayOf('s','n','a','p','e','r','a','s','e','r','.','b','y','.','n','z','r'))
+        if (packageName != e) {
+            finishAffinity()
+            return
+        }
+        
         enableEdgeToEdge()
         setContent {
             MyApplicationTheme {
